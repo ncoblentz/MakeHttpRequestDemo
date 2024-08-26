@@ -1,5 +1,12 @@
 import burp.api.montoya.BurpExtension
 import burp.api.montoya.MontoyaApi
+import burp.api.montoya.ui.contextmenu.AuditIssueContextMenuEvent
+import burp.api.montoya.ui.contextmenu.ContextMenuEvent
+import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider
+import burp.api.montoya.ui.contextmenu.WebSocketContextMenuEvent
+import java.awt.Component
+import javax.swing.JMenuItem
+
 /* Uncomment this section if you wish to use persistent settings and automatic UI Generation from: https://github.com/ncoblentz/BurpMontoyaLibrary
 import com.nickcoblentz.montoya.settings.*
 import de.milchreis.uibooster.model.Form
@@ -9,7 +16,7 @@ import de.milchreis.uibooster.model.FormBuilder
 // Montoya API Documentation: https://portswigger.github.io/burp-extensions-montoya-api/javadoc/burp/api/montoya/MontoyaApi.html
 // Montoya Extension Examples: https://github.com/PortSwigger/burp-extensions-montoya-api-examples
 
-class YourBurpKotlinExtensionName : BurpExtension {
+class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
     private lateinit var api: MontoyaApi
 
 
@@ -17,6 +24,9 @@ class YourBurpKotlinExtensionName : BurpExtension {
     // Add one or more persistent settings here
     // private lateinit var exampleNameSetting : StringExtensionSetting
 
+
+    private val tryHTTPVerbsMenuItem = JMenuItem("Try HTTP Verbs")
+    private val httpMenuItems = listOf(tryHTTPVerbsMenuItem)
 
 
     override fun initialize(api: MontoyaApi?) {
@@ -65,17 +75,39 @@ class YourBurpKotlinExtensionName : BurpExtension {
         */
 
         // Name our extension when it is displayed inside of Burp Suite
-        api.extension().setName("Your Plugin Name Here")
+        api.extension().setName("Make HTTP Request Demo")
 
         // Code for setting up your extension starts here...
 
-        // Just a simple hello world to start with
-        api.logging().logToOutput("Hello Extension Writer!")
+        // Tell Burp Suite that the methods for generating right-click context menus is found here in #
+        api.userInterface().registerContextMenuItemsProvider(this)
+
+
 
         // Code for setting up your extension ends here
 
         // See logging comment above
         api.logging().logToOutput("...Finished loading the extension")
 
+    }
+
+    // Return right-click context menu items when you are interacting with HTTP requests/responses (various tools/tabs)
+    override fun provideMenuItems(event: ContextMenuEvent?): List<Component> {
+        event?.let {
+            if(it.selectedRequestResponses().isNotEmpty()) {
+                return httpMenuItems
+            }
+        }
+        return emptyList()
+    }
+
+    // Return right-click context menu items when you are interacting with web socket messages.
+    override fun provideMenuItems(event: WebSocketContextMenuEvent?): List<Component> {
+        return emptyList()
+    }
+
+    // Return right-click context menu items when you are interacting with audit issues.
+    override fun provideMenuItems(event: AuditIssueContextMenuEvent?): List<Component> {
+        return emptyList()
     }
 }
