@@ -1,12 +1,18 @@
 import burp.api.montoya.BurpExtension
 import burp.api.montoya.MontoyaApi
+import burp.api.montoya.http.message.HttpRequestResponse
 import burp.api.montoya.ui.contextmenu.AuditIssueContextMenuEvent
 import burp.api.montoya.ui.contextmenu.ContextMenuEvent
 import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider
 import burp.api.montoya.ui.contextmenu.WebSocketContextMenuEvent
+import com.nickcoblentz.montoya.findRequestResponsesInEitherEvent
+import com.nickcoblentz.montoya.withAddedOrUpdatedHeader
+import com.nickcoblentz.montoya.withUpdatedContentLength
 import java.awt.Component
 import java.awt.event.ActionEvent
+import java.util.concurrent.Executors
 import javax.swing.JMenuItem
+
 
 /* Uncomment this section if you wish to use persistent settings and automatic UI Generation from: https://github.com/ncoblentz/BurpMontoyaLibrary
 import com.nickcoblentz.montoya.settings.*
@@ -26,8 +32,13 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
     // private lateinit var exampleNameSetting : StringExtensionSetting
 
 
+    // List of menu items for the right-click context menu
     private val tryHTTPVerbsMenuItem = JMenuItem("Try HTTP Verbs")
     private val httpMenuItems = listOf(tryHTTPVerbsMenuItem)
+
+    private var currentHttpRequestResponse = emptyList<HttpRequestResponse>()
+
+    private val executor = Executors.newVirtualThreadPerTaskExecutor()
 
 
     override fun initialize(api: MontoyaApi?) {
@@ -98,6 +109,46 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
     private fun tryHTTPVerbsActionPerformed(e: ActionEvent?) {
         api.logging().logToOutput("Entered tryHTTPVerbsActionPerformed")
 
+        val verbsToTry = listOf(
+            "OPTIONS",
+            "POST",
+            "PUT",
+            "PATCH",
+            "HEAD",
+            "GET",
+            "TRACE",
+            "TRACK",
+            "LOCK",
+            "UNLOCK",
+            "FAKE",
+            "CONNECT",
+            "COPY",
+            "MOVE",
+            "LABEL",
+            "UPDATE",
+            "VERSION-CONTROL",
+            "UNCHECKOUT",
+            "CHECKOUT",
+            "DELETE"
+        )
+
+        val verbsWithoutBody = listOf("GET", "OPTIONS", "HEAD", "CONNECT", "TRACE")
+
+        for(httpRequestResponse in currentHttpRequestResponse) {
+            for(verb in verbsToTry) {
+
+                var httpRequestToTry = httpRequestResponse.request().withMethod(verb)
+
+                if(!verbsWithoutBody.contains(verb)) {
+                    httpRequestToTry = httpRequestToTry.withAddedOrUpdatedHeader("Content-Type","application/json").withBody("{}").withUpdatedContentLength()
+                }
+
+                // This will throw an exception saying: java.lang.RuntimeException: Extensions should not make HTTP requests in the Swing event dispatch thread
+                //api.http().sendRequest(httpRequestToTry)
+
+                executor.submit { api.http().sendRequest(httpRequestToTry) }
+            }
+        }
 
         api.logging().logToOutput("Leaving tryHTTPVerbsActionPerformed")
     }
@@ -105,7 +156,12 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
     // Return right-click context menu items when you are interacting with HTTP requests/responses (various tools/tabs)
     override fun provideMenuItems(event: ContextMenuEvent?): List<Component> {
         event?.let {
-            if(it.selectedRequestResponses().isNotEmpty() || it.messageEditorRequestResponse().isPresent) {
+            // When you select several requests at once in proxy history or similar tools, those items show up in selectedRequestResponses
+            // When you right-click on a single http request within the HTTP editor, that request shows up in messageEditorRequestResponse
+            if(it.selectedRequestResponses().isNotEmpty() || (it.messageEditorRequestResponse().isPresent && !it.messageEditorRequestResponse().isEmpty)){
+
+                //tryHTTPVerbsActionPerformed doesn't have access to the HTTP Requests/Responses unless it is saved somewhere
+                currentHttpRequestResponse=event.findRequestResponsesInEitherEvent()
                 return httpMenuItems
             }
         }
