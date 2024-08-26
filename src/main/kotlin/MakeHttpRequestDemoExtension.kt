@@ -94,6 +94,7 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
 
     }
 
+    // This function will be called with the "Try HTTP Verbs" Right-Click Context Menu Item is Chosen
     private fun tryHTTPVerbsActionPerformed(e: ActionEvent?) {
         api.logging().logToOutput("Entered tryHTTPVerbsActionPerformed")
 
