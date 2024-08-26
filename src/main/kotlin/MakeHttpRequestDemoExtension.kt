@@ -94,7 +94,7 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
     // Return right-click context menu items when you are interacting with HTTP requests/responses (various tools/tabs)
     override fun provideMenuItems(event: ContextMenuEvent?): List<Component> {
         event?.let {
-            if(it.selectedRequestResponses().isNotEmpty()) {
+            if(it.selectedRequestResponses().isNotEmpty() || it.messageEditorRequestResponse().isPresent) {
                 return httpMenuItems
             }
         }
