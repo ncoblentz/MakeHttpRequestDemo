@@ -94,6 +94,8 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
     // Return right-click context menu items when you are interacting with HTTP requests/responses (various tools/tabs)
     override fun provideMenuItems(event: ContextMenuEvent?): List<Component> {
         event?.let {
+            // When you select several requests at once in proxy history or similar tools, those items show up in selectedRequestResponses
+            // When you right click on a single http request within the HTTP editor, that request shows up in messageEditorRequestResponse
             if(it.selectedRequestResponses().isNotEmpty() || it.messageEditorRequestResponse().isPresent) {
                 return httpMenuItems
             }
