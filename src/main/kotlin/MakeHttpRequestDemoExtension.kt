@@ -5,6 +5,7 @@ import burp.api.montoya.ui.contextmenu.ContextMenuEvent
 import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider
 import burp.api.montoya.ui.contextmenu.WebSocketContextMenuEvent
 import java.awt.Component
+import java.awt.event.ActionEvent
 import javax.swing.JMenuItem
 
 /* Uncomment this section if you wish to use persistent settings and automatic UI Generation from: https://github.com/ncoblentz/BurpMontoyaLibrary
@@ -82,6 +83,8 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
         // Tell Burp Suite that the methods for generating right-click context menus is found here in #
         api.userInterface().registerContextMenuItemsProvider(this)
 
+        // Tell Burp what to execute when a user clicks this menu item
+        tryHTTPVerbsMenuItem.addActionListener({e -> tryHTTPVerbsActionPerformed(e) })
 
 
         // Code for setting up your extension ends here
@@ -89,6 +92,13 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
         // See logging comment above
         api.logging().logToOutput("...Finished loading the extension")
 
+    }
+
+    private fun tryHTTPVerbsActionPerformed(e: ActionEvent?) {
+        api.logging().logToOutput("Entered tryHTTPVerbsActionPerformed")
+
+
+        api.logging().logToOutput("Leaving tryHTTPVerbsActionPerformed")
     }
 
     // Return right-click context menu items when you are interacting with HTTP requests/responses (various tools/tabs)
