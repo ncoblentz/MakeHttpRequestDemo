@@ -36,8 +36,10 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
     private val tryHTTPVerbsMenuItem = JMenuItem("Try HTTP Verbs")
     private val httpMenuItems = listOf(tryHTTPVerbsMenuItem)
 
+    // This property will store the current list of http requests/responses relevant for the right-click context menu selection
     private var currentHttpRequestResponse = emptyList<HttpRequestResponse>()
 
+    // An Executor using virtual threads will be used below when issuing new HTTP Requests
     private val executor = Executors.newVirtualThreadPerTaskExecutor()
 
 
@@ -95,7 +97,7 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
         api.userInterface().registerContextMenuItemsProvider(this)
 
         // Tell Burp what to execute when a user clicks this menu item
-        tryHTTPVerbsMenuItem.addActionListener({e -> tryHTTPVerbsActionPerformed(e) })
+        tryHTTPVerbsMenuItem.addActionListener {e -> tryHTTPVerbsActionPerformed(e) }
 
 
         // Code for setting up your extension ends here
@@ -109,6 +111,7 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
     private fun tryHTTPVerbsActionPerformed(e: ActionEvent?) {
         api.logging().logToOutput("Entered tryHTTPVerbsActionPerformed")
 
+        // This list of verbs will be attempted against each endpoint in the list of HTTP Requests
         val verbsToTry = listOf(
             "OPTIONS",
             "POST",
@@ -132,20 +135,32 @@ class MakeHttpRequestDemoExtension : BurpExtension, ContextMenuItemsProvider {
             "DELETE"
         )
 
+        // This list of verbs does not require a "Content-Length" header or body
         val verbsWithoutBody = listOf("GET", "OPTIONS", "HEAD", "CONNECT", "TRACE")
 
+        // Loop through each HTTP request/response relevant for the right-click context menu selection
         for(httpRequestResponse in currentHttpRequestResponse) {
+            // Loop through each verb to attempt
             for(verb in verbsToTry) {
 
+                // Use the existing request as a template, but swap out the verb
                 var httpRequestToTry = httpRequestResponse.request().withMethod(verb)
 
+                // If the verb is in a list that requires a body, make sure to add a "Content-Type" header and empty JSON body
                 if(!verbsWithoutBody.contains(verb)) {
                     httpRequestToTry = httpRequestToTry.withAddedOrUpdatedHeader("Content-Type","application/json").withBody("{}").withUpdatedContentLength()
+                }
+                // Otherwise, if it currently has  body, strip out the body
+                else {
+                    httpRequestToTry = httpRequestToTry.withRemovedHeader("Content-Length").withBody("")
                 }
 
                 // This will throw an exception saying: java.lang.RuntimeException: Extensions should not make HTTP requests in the Swing event dispatch thread
                 //api.http().sendRequest(httpRequestToTry)
 
+                // Use virtual threads to submit the requests
+                // This will significantly speed up execution as compared to a single thread or thread pool
+                // The JVM will automatically use an Async/Await pattern under the hood without us handling it
                 executor.submit { api.http().sendRequest(httpRequestToTry) }
             }
         }
