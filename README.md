@@ -1,5 +1,9 @@
 # Make HTTP Request Demo
 
+_By [Nick Coblentz](https://www.linkedin.com/in/ncoblentz/)_
+
+__This Burp Extension is made possible by [Virtue Security](https://www.virtuesecurity.com), the Application Penetration Testing consulting company I work for.__
+
 When testing applications with Burp Suite, you often send quite a few of the same test cases every assessment. Those test cases can't be automated into a scanner check or BCheck because you want to analyze the response from the application manually. You are looking for abnormalities or interesting responses, not just vulnerabilities. Use of intruder is one common way to iterate through a lot of attack payloads, but requires setup for each test case. Since these test cases are repeated each assessment, it's better to use a right-click context menu after selecting one or more requests and choosing a test suite you would like to run. Then, the results can be reviewed in the logger tab. During analysis, you can filter some of those results or extract data using Bambdas as well. 
 
 This project demonstrates how to create one of those test cases. This one focuses on iterating through a list of HTTP verbs when testing REST services. It also demonstrates use of Java Virtual Threads to send a large number of asynchronous requests so your test cases complete quickly. 
